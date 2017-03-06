@@ -120,10 +120,11 @@ plot(mod_GBR)
 
 
 # Discussion
-From the result above we see that the Decision Trees method has a very low accuracy (0.4898895). Whilst both Random Forests and Generalized Boosted methods give us a very high accuracy; 0.9998 and 0.9976, respectively. I therefore, use the Random Forests method for predicting results of the Test Data.
+From the result above we see that the Decision Trees method has a very low accuracy (0.4898895). Whilst both Random Forests and Generalized Boosted methods give us a very high accuracy; 0.9998 and 0.9976, respectively. I therefore, using either the Random Forests or Generalized Boosted methods for predicting results of the Test Data is fine.
 
 
-# predicting results on the Test Data
+# Cross Validation and Predicting results on the Test Data
+For example if I use Generalized Boosted methods for predicting results, the Expected Sample Error will be 100-99.76 = 0.24% which is very small.
 ```{r}
 (Predicting_test_data_GBR <- predict(mod_GBR, newdata = testing2))
 
