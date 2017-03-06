@@ -1,0 +1,131 @@
+---
+title: "Coursera Practical Machine Learning Course Project"
+author: "Duc Nguyen"
+#date: "March 6, 2017"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = F, message=F, warning=F, cache = T)
+``` 
+
+# Loading the data and library
+```{r}
+# Loading Library
+library(caret)
+# loading the data
+training <- read.csv("pml-training.csv", header = T, na.strings = c("NA", "", "#DIV0/!")) # add NA to the blank space
+testing <- read.csv("pml-testing.csv", header = T, na.strings = c("NA", "", "#DIV0/!"))
+
+dim(training)
+dim(testing)
+summary(training$classe)
+unique(training$user_name)
+summary(training$user_name)
+``` 
+
+
+# Cleaning the Data
+## Removing the missing values
+I first remove the columns which contains any missing values to use only the columns which is completed.
+```{r}
+
+# Removing the first columns which is the index
+training <- training[, -1]
+testing <- testing[, -1]
+dim(training)
+
+# Remove the columns with missing values
+training1 <- training[, colSums(is.na(training)) == 0] 
+dim(training1)
+testing1 <- testing[, colSums(is.na(testing)) == 0]
+dim(testing1)
+
+# Checking the remaining variables
+str(training1)
+```   
+## Removing the near zero values
+There are still many columns which contains very small values in comparision with others. We also need to exclude these variables in the regression models.
+
+```{r}
+nzv <- nearZeroVar(training1, saveMetrics = T)
+str(nzv)
+training2 <- training1[, nzv$nzv == F] # Keep only the Non-near zero variables
+
+nzv2 <- nearZeroVar(testing1, saveMetrics = T)
+testing2 <- testing1[, nzv2$nzv == F] # Keep only the Non-near zero variables
+dim(testing2)
+dim(training2)
+```
+
+# Data splitting
+To do Machine Learning and test the model, I split the data into training (70\%) and the test (30\%) set.
+```{r}
+set.seed(3456)
+inTrain <- createDataPartition(training2$classe, p = .7, list = F)
+myTrain <- training2[inTrain, ]
+myTest <-  training2[-inTrain, ]
+``` 
+
+# Machine Learning: Prediction Algorithims
+Here I am going to use 3 techniques which has been shown in the class. It includes "Prediction with Decision Trees", "Prediction with Random forests", and "Prediction with Generalized Boosted Regression"
+
+## ## Prediction with Decission Trees 
+```{r}
+set.seed(123456)
+library(rattle)
+library(rpart)
+mod_tree <- train(classe~., method = "rpart", data = myTrain)
+pred_tree <- predict(mod_tree, newdata = myTest)
+#print(mod_tree$finalModel)
+fancyRpartPlot(mod_tree$finalModel)
+
+# Accuracy of the model
+(Accuracy_tree <- confusionMatrix(pred_tree, myTest$classe)$overall["Accuracy"])
+
+
+```
+
+
+## Prediction with Random Forests
+```{r}
+set.seed(123456)
+library(randomForest)
+
+mod_rf <- randomForest(classe~., data = myTrain)
+pred_rf <- predict(mod_rf, myTest)
+(method_rf <- confusionMatrix(pred_rf, myTest$classe))
+
+# Accuracy of the method
+method_rf$overall["Accuracy"]
+mod_rf
+
+# Plotting the fit
+plot(mod_rf)
+
+```  
+
+
+##Prediction with Generalized Boosted Regression
+
+```{r}
+set.seed(12345)
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 1)
+mod_GBR <- train(classe ~., data = myTrain, method = "gbm", trControl = fitControl, verbose = F)
+pred_GBR <- predict(mod_GBR, myTest)
+confusionMatrix(pred_GBR, myTest$classe)
+plot(mod_GBR)
+```   
+
+
+# Discussion
+From the result above we see that the Decision Trees method has a very low accuracy (0.4898895). Whilst both Random Forests and Generalized Boosted methods give us a very high accuracy; 0.9998 and 0.9976, respectively. I therefore, use the Random Forests method for predicting results of the Test Data.
+
+
+# predicting results on the Test Data
+```{r}
+(Predicting_test_data_GBR <- predict(mod_GBR, newdata = testing2))
+
+```
+
